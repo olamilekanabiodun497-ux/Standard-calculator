@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom styles for button interactions and appearance */
+        .calc-btn {
+            transition: all 0.15s ease-in-out;
+            user-select: none;
+            touch-action: manipulation;
+        }
+        .calc-btn:hover {
+            filter: brightness(0.93);
+        }
+        .calc-btn:active {
+            transform: scale(0.97);
+            filter: brightness(0.85);
+        }
+        /* Grid layout for memory buttons */
+        .memory-grid {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+        }
+        /* Keyboard key indicator active highlight */
+        .btn-active {
+            filter: brightness(0.85);
+            transform: scale(0.97);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 min-h-screen flex items-center justify-center p-4 font-sans text-slate-800" style="background: linear-gradient(180deg, #eed4c1 0%, #eb608e 100%);">
+
+    <!-- Main Calculator Window Container -->
+    <div class="w-full max-w-sm bg-slate-100 rounded-2xl shadow-2xl overflow-hidden border border-slate-700/30 flex flex-col" style="background-color: #fba2a2;">
+        
+        <!-- Window Title Bar -->
+        <div class="bg-slate-200/80 px-4 py-2.5 flex items-center justify-between text-xs font-medium text-slate-600 border-b border-slate-300/60" style="background-color:#fba2a2; border: none;">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-calculator text-slate-700"></i>
+                <span class="tracking-wide font-semibold text-slate-700">Calculator</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <button class="hover:text-slate-900 transition-colors" title="Minimize"><i class="fa-solid fa-minus"></i></button>
+                <button class="hover:text-slate-900 transition-colors" title="Maximize"><i class="fa-regular fa-square"></i></button>
+                <button class="hover:text-red-600 transition-colors" title="Close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        </div>
+
+        <!-- App Mode Header -->
+        <div class="px-4 pt-3 pb-1 flex items-center justify-between text-slate-800">
+            <div class="flex items-center gap-3">
+                <button class="p-1.5 hover:bg-slate-200 rounded-lg transition-colors text-slate-700">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+                <h1 class="text-xl font-bold tracking-tight text-slate-800">Standard</h1>
+                <button class="p-1 hover:bg-slate-200 rounded-lg transition-colors text-xs text-slate-500">
+                    <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
+                </button>
+            </div>
+            <button class="p-1.5 hover:bg-slate-200 rounded-lg transition-colors text-slate-600" title="History / Info">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+            </button>
+        </div>
+
+        <!-- Calculator Screen Display Section -->
+        <div class="px-5 py-3 flex flex-col items-end justify-end min-h-[110px] bg-slate-100" style="display: flex; flex-direction: column; justify-content: space-between">
+            <!-- Calculation Expression History Line -->
+            <div id="expressionDisplay" class="text-slate-500 text-sm font-medium h-6 overflow-hidden text-ellipsis whitespace-nowrap w-full text-right">
+                <!-- Example: 23 + 6 = -->
+            </div>
+            <!-- Main Result Output Line -->
+            <div id="mainDisplay" class="text-4xl font-bold text-slate-900 tracking-tight overflow-x-auto overflow-y-hidden max-w-full text-right leading-none my-1">
+                0
+            </div>
+        </div>
+        
+
+        <!-- Memory Action Row -->
+        <div class="memory-grid text-xs font-semibold text-slate-600 px-2 py-1 gap-1 text-center border-b border-slate-200" style="border: none;">
+            <button onclick="handleMemory('MC')" class="py-1.5 hover:bg-slate-200 rounded transition-colors" title="Memory Clear">MC</button>
+            <button onclick="handleMemory('MR')" class="py-1.5 hover:bg-slate-200 rounded transition-colors" title="Memory Recall">MR</button>
+            <button onclick="handleMemory('M+')" class="py-1.5 hover:bg-slate-200 rounded transition-colors" title="Memory Add">M+</button>
+            <button onclick="handleMemory('M-')" class="py-1.5 hover:bg-slate-200 rounded transition-colors" title="Memory Subtract">M-</button>
+            <button onclick="handleMemory('MS')" class="py-1.5 hover:bg-slate-200 rounded transition-colors" title="Memory Store">MS</button>
+            <button onclick="handleMemory('M-list')" class="py-1.5 hover:bg-slate-200 rounded transition-colors text-slate-400" disabled>M▾</button>
+        </div>
+
+        <!-- Keypad Grid -->
+        <div class="grid grid-cols-4 gap-1.5 p-3 bg-slate-200/60 flex-1" style="background-color: #fba2a2;">
+            
+            <!-- Row 1: Special Operations -->
+            <button onclick="handleFunction('%')" class="calc-btn bg-slate-100/80 hover:bg-slate-100 text-slate-800 font-medium py-3.5 rounded-lg shadow-sm text-sm">%</button>
+            <button onclick="clearEntry()" class="calc-btn bg-slate-100/80 hover:bg-slate-100 text-slate-800 font-medium py-3.5 rounded-lg shadow-sm text-sm">CE</button>
+            <button onclick="clearAll()" class="calc-btn bg-slate-100/80 hover:bg-slate-100 text-slate-800 font-medium py-3.5 rounded-lg shadow-sm text-sm">C</button>
+            <button onclick="handleBackspace()" class="calc-btn bg-slate-100/80 hover:bg-slate-100 text-slate-800 py-3.5 rounded-lg shadow-sm text-sm flex items-center justify-center">
+                <i class="fa-solid fa-delete-left"></i>
+            </button>
+
+            <!-- Row 2: Advanced Math Functions -->
+            <button onclick="handleFunction('reciprocal')" class="calc-btn bg-slate-100/80 hover:bg-slate-100 text-slate-800 font-medium py-3.5 rounded-lg shadow-sm text-sm">1/x</button>
+            <button onclick="handleFunction('square')" class="calc-btn bg-slate-100/80 hover:bg-slate-100 text-slate-800 font-medium py-3.5 rounded-lg shadow-sm text-sm">x²</button>
+            <button onclick="handleFunction('sqrt')" class="calc-btn bg-slate-100/80 hover:bg-slate-100 text-slate-800 font-medium py-3.5 rounded-lg shadow-sm text-sm">√x</button>
+            <button onclick="handleOperator('/')" class="calc-btn bg-slate-100/80 hover:bg-slate-100 text-slate-800 font-semibold py-3.5 rounded-lg shadow-sm text-lg">÷</button>
+
+            <!-- Row 3: 7, 8, 9, Multiply -->
+            <button onclick="appendDigit('7')" class="calc-btn bg-white text-slate-900 font-semibold text-lg py-3.5 rounded-lg shadow-sm">7</button>
+            <button onclick="appendDigit('8')" class="calc-btn bg-white text-slate-900 font-semibold text-lg py-3.5 rounded-lg shadow-sm">8</button>
+            <button onclick="appendDigit('9')" class="calc-btn bg-white text-slate-900 font-semibold text-lg py-3.5 rounded-lg shadow-sm">9</button>
+            <button onclick="handleOperator('*')" class="calc-btn bg-slate-100/80 hover:bg-slate-100 text-slate-800 font-semibold py-3.5 rounded-lg shadow-sm text-lg">×</button>
+
+            <!-- Row 4: 4, 5, 6, Subtract -->
+            <button onclick="appendDigit('4')" class="calc-btn bg-white text-slate-900 font-semibold text-lg py-3.5 rounded-lg shadow-sm">4</button>
+            <button onclick="appendDigit('5')" class="calc-btn bg-white text-slate-900 font-semibold text-lg py-3.5 rounded-lg shadow-sm">5</button>
+            <button onclick="appendDigit('6')" class="calc-btn bg-white text-slate-900 font-semibold text-lg py-3.5 rounded-lg shadow-sm">6</button>
+            <button onclick="handleOperator('-')" class="calc-btn bg-slate-100/80 hover:bg-slate-100 text-slate-800 font-semibold py-3.5 rounded-lg shadow-sm text-lg">−</button>
+
+            <!-- Row 5: 1, 2, 3, Add -->
+            <button onclick="appendDigit('1')" class="calc-btn bg-white text-slate-900 font-semibold text-lg py-3.5 rounded-lg shadow-sm">1</button>
+            <button onclick="appendDigit('2')" class="calc-btn bg-white text-slate-900 font-semibold text-lg py-3.5 rounded-lg shadow-sm">2</button>
+            <button onclick="appendDigit('3')" class="calc-btn bg-white text-slate-900 font-semibold text-lg py-3.5 rounded-lg shadow-sm">3</button>
+            <button onclick="handleOperator('+')" class="calc-btn bg-slate-100/80 hover:bg-slate-100 text-slate-800 font-semibold py-3.5 rounded-lg shadow-sm text-lg">+</button>
+
+            <!-- Row 6: Negate, 0, Decimal, Equals -->
+            <button onclick="toggleSign()" class="calc-btn bg-white text-slate-900 font-semibold text-base py-3.5 rounded-lg shadow-sm">±</button>
+            <button onclick="appendDigit('0')" class="calc-btn bg-white text-slate-900 font-semibold text-lg py-3.5 rounded-lg shadow-sm">0</button>
+            <button onclick="appendDecimal()" class="calc-btn bg-white text-slate-900 font-semibold text-lg py-3.5 rounded-lg shadow-sm">.</button>
+            <button onclick="calculateResult()" class="calc-btn bg-sky-600 hover:bg-sky-700 text-white font-semibold text-xl py-3.5 rounded-lg shadow-md transition-colors">=</button>
+
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Calculator State
+        let currentInput = '0';
+        let previousInput = null;
+        let operator = null;
+        let memoryValue = 0;
+        let shouldResetDisplay = false;
+        let isResultDisplayed = false;
+
+        // DOM Element Handles
+        const mainDisplay = document.getElementById('mainDisplay');
+        const expressionDisplay = document.getElementById('expressionDisplay');
+
+        // Helper to format display symbols for expression bar
+        function getOperatorSymbol(op) {
+            switch(op) {
+                case '+': return '+';
+                case '-': return '−';
+                case '*': return '×';
+                case '/': return '÷';
+                default: return '';
+            }
+        }
+
+        // Format number strings for clean presentation
+        function formatNumber(numStr) {
+            if (numStr === 'Error' || numStr === 'Cannot divide by zero') return numStr;
+            const num = parseFloat(numStr);
+            if (isNaN(num)) return '0';
+            
+            // Limit maximum visible length
+            if (numStr.length > 12) {
+                return num.toPrecision(8).toString();
+            }
+            return numStr;
+        }
+
+        // Update UI displays
+        function updateDisplay() {
+            mainDisplay.innerText = formatNumber(currentInput);
+            
+            if (operator && previousInput !== null) {
+                expressionDisplay.innerText = `${previousInput} ${getOperatorSymbol(operator)}`;
+            } else if (!operator && isResultDisplayed && expressionDisplay.innerText) {
+                // Keep expression as is until next action
+            } else {
+                expressionDisplay.innerText = '';
+            }
+        }
+
+        // Append digit input
+        function appendDigit(digit) {
+            if (currentInput === '0' || shouldResetDisplay) {
+                currentInput = digit;
+                shouldResetDisplay = false;
+            } else {
+                if (currentInput.length < 12) {
+                    currentInput += digit;
+                }
+            }
+            isResultDisplayed = false;
+            updateDisplay();
+        }
+
+        // Append decimal point
+        function appendDecimal() {
+            if (shouldResetDisplay) {
+                currentInput = '0.';
+                shouldResetDisplay = false;
+                updateDisplay();
+                return;
+            }
+            if (!currentInput.includes('.')) {
+                currentInput += '.';
+                updateDisplay();
+            }
+        }
+
+        // Toggle positive/negative sign
+        function toggleSign() {
+            if (currentInput === '0' || currentInput === 'Error') return;
+            currentInput = (parseFloat(currentInput) * -1).toString();
+            updateDisplay();
+        }
+
+        // Handle mathematical operator input
+        function handleOperator(nextOperator) {
+            if (currentInput === 'Error') return;
+
+            if (operator && !shouldResetDisplay) {
+                calculateResult(false);
+            }
+
+            previousInput = currentInput;
+            operator = nextOperator;
+            shouldResetDisplay = true;
+            isResultDisplayed = false;
+
+            expressionDisplay.innerText = `${previousInput} ${getOperatorSymbol(operator)}`;
+        }
+
+        // Calculate arithmetic expression
+        function calculateResult(isFinal = true) {
+            if (operator === null || previousInput === null) return;
+
+            const prev = parseFloat(previousInput);
+            const current = parseFloat(currentInput);
+            let result = 0;
+
+            switch (operator) {
+                case '+':
+                    result = prev + current;
+                    break;
+                case '-':
+                    result = prev - current;
+                    break;
+                case '*':
+                    result = prev * current;
+                    break;
+                case '/':
+                    if (current === 0) {
+                        currentInput = 'Error';
+                        expressionDisplay.innerText = `${previousInput} ÷ 0 =`;
+                        operator = null;
+                        previousInput = null;
+                        shouldResetDisplay = true;
+                        updateDisplay();
+                        return;
+                    }
+                    result = prev / current;
+                    break;
+            }
+
+            // Round float inaccuracies (e.g. 0.1 + 0.2)
+            result = Math.round(result * 1e10) / 1e10;
+
+            if (isFinal) {
+                expressionDisplay.innerText = `${previousInput} ${getOperatorSymbol(operator)} ${currentInput} =`;
+                operator = null;
+                previousInput = null;
+                isResultDisplayed = true;
+            } else {
+                previousInput = result.toString();
+            }
+
+            currentInput = result.toString();
+            shouldResetDisplay = true;
+            updateDisplay();
+        }
+
+        // Handle single-operand functions (1/x, x², √x, %)
+        function handleFunction(func) {
+            if (currentInput === 'Error') return;
+            const val = parseFloat(currentInput);
+            let res = 0;
+
+            switch (func) {
+                case 'reciprocal':
+                    if (val === 0) {
+                        currentInput = 'Error';
+                        updateDisplay();
+                        return;
+                    }
+                    res = 1 / val;
+                    expressionDisplay.innerText = `1/(${currentInput})`;
+                    break;
+                case 'square':
+                    res = val * val;
+                    expressionDisplay.innerText = `sqr(${currentInput})`;
+                    break;
+                case 'sqrt':
+                    if (val < 0) {
+                        currentInput = 'Error';
+                        updateDisplay();
+                        return;
+                    }
+                    res = Math.sqrt(val);
+                    expressionDisplay.innerText = `√(${currentInput})`;
+                    break;
+                case '%':
+                    res = val / 100;
+                    expressionDisplay.innerText = `${currentInput}%`;
+                    break;
+            }
+
+            currentInput = (Math.round(res * 1e10) / 1e10).toString();
+            shouldResetDisplay = true;
+            updateDisplay();
+        }
+
+        // Backspace operation
+        function handleBackspace() {
+            if (shouldResetDisplay || currentInput === 'Error') return;
+            if (currentInput.length === 1 || (currentInput.length === 2 && currentInput.startsWith('-'))) {
+                currentInput = '0';
+            } else {
+                currentInput = currentInput.slice(0, -1);
+            }
+            updateDisplay();
+        }
+
+        // Clear Entry (CE)
+        function clearEntry() {
+            currentInput = '0';
+            updateDisplay();
+        }
+
+        // Clear All (C)
+        function clearAll() {
+            currentInput = '0';
+            previousInput = null;
+            operator = null;
+            shouldResetDisplay = false;
+            isResultDisplayed = false;
+            expressionDisplay.innerText = '';
+            updateDisplay();
+        }
+
+        // Memory Operations
+        function handleMemory(action) {
+            const val = parseFloat(currentInput);
+            if (isNaN(val) || currentInput === 'Error') return;
+
+            switch (action) {
+                case 'MC':
+                    memoryValue = 0;
+                    break;
+                case 'MR':
+                    currentInput = memoryValue.toString();
+                    shouldResetDisplay = true;
+                    updateDisplay();
+                    break;
+                case 'M+':
+                    memoryValue += val;
+                    shouldResetDisplay = true;
+                    break;
+                case 'M-':
+                    memoryValue -= val;
+                    shouldResetDisplay = true;
+                    break;
+                case 'MS':
+                    memoryValue = val;
+                    shouldResetDisplay = true;
+                    break;
+            }
+        }
+
+        // Physical Keyboard Support
+        document.addEventListener('keydown', (e) => {
+            if (e.key >= '0' && e.key <= '9') {
+                appendDigit(e.key);
+            } else if (e.key === '.') {
+                appendDecimal();
+            } else if (e.key === '+') {
+                handleOperator('+');
+            } else if (e.key === '-') {
+                handleOperator('-');
+            } else if (e.key === '*') {
+                handleOperator('*');
+            } else if (e.key === '/') {
+                e.preventDefault();
+                handleOperator('/');
+            } else if (e.key === 'Enter' || e.key === '=') {
+                e.preventDefault();
+                calculateResult();
+            } else if (e.key === 'Backspace') {
+                handleBackspace();
+            } else if (e.key === 'Escape') {
+                clearAll();
+            } else if (e.key === '%') {
+                handleFunction('%');
+            }
+        });
+    </script>
+</body>
+</html>
